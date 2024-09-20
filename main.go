@@ -2,34 +2,37 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
-	"os"
+	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
 )
 
 type animeItem struct {
-	Name     string
-	Released string
-	Img      string
-	Link     string
+	Name     string `json:"name"`
+	Released string `json:"released"`
+	Img      string `json:"img"`
+	Link     string `json:"link"`
 }
 
-func joinArgs(args []string) string {
+func joinArgs(args string) string {
 	var combinedStr string
-	for i := 1; i < len(args); i++ {
+	tempStr := strings.Split(args, " ")
+	for i := 1; i < len(tempStr); i++ {
 		if i > 1 {
 			combinedStr += " "
 		}
-		combinedStr += args[i]
+		combinedStr += tempStr[i]
 	}
-
 	return combinedStr
 }
 
-func main() {
-	args := os.Args
-	search := url.QueryEscape(joinArgs(args))
+func getAnimeList(ctx *gin.Context) {
+	keyword := ctx.Param("keyword")
+	// search := url.QueryEscape(joinArgs(keyword))
+	search := url.QueryEscape(keyword)
 	url := fmt.Sprintf("https://gogoanime3.co/search.html?keyword=%s", search)
 	collector := colly.NewCollector()
 
@@ -53,9 +56,17 @@ func main() {
 			anime.Img = eachAnime.ChildAttr("img", "src")
 			animeList = append(animeList, anime)
 		})
-		fmt.Println(animeList)
+		fmt.Printf("anime list %v", animeList)
 	})
 
 	collector.Visit(url)
+	ctx.IndentedJSON(http.StatusOK, animeList)
+	// return animeList
+}
 
+func main() {
+	router := gin.Default()
+	router.POST("/getanime", getAnimeList)
+
+	router.Run("localhost:8080")
 }
