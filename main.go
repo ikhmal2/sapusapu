@@ -24,15 +24,7 @@ func getAnimeList(ctx *gin.Context) {
 	url := fmt.Sprintf("%ssearch.html?keyword=%s", webUrl, search)
 	collector := colly.NewCollector()
 
-	collector.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL)
-	})
-
-	collector.OnResponse(func(r *colly.Response) {
-		fmt.Println("Responding from ", r.Request.URL)
-	})
-
-	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled") }))
+	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled:", err) }))
 
 	var animeList []animeItem
 	collector.OnHTML(".items", func(e *colly.HTMLElement) {
