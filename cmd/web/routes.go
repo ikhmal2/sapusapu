@@ -1,12 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
+	"github.com/ikhmal2/sapusapu/internal/db"
+	"github.com/ikhmal2/sapusapu/internal/sqlQueries"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var webUrl string = "https://gogoanime3.co/"
@@ -35,7 +40,20 @@ func getAnimeList(ctx *gin.Context) {
 			anime.Link = eachAnime.ChildAttr("a", "href")
 			anime.Img = eachAnime.ChildAttr("img", "src")
 			animeList = append(animeList, anime)
+
+			insertedAnime, err := db.DBconnect().InsertAnimeIntoList(ctx, sqlQueries.InsertAnimeIntoListParams{
+				AnimeName: anime.Name,
+				Released:  anime.Released,
+				Img:       sql.NullString{String: anime.Img, Valid: true},
+				Link:      anime.Link,
+			})
+
+			if err != nil {
+				log.Print("Error executing query: ", err)
+			}
+			log.Print("Anime inserted into DB: ", insertedAnime)
 		})
+
 	})
 
 	collector.Visit(url)
