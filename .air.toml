@@ -1,6 +1,6 @@
-root = "."
+root = "./cmd/web/"
 testdata_dir = "testdata"
-tmp_dir = "tmp"
+tmp_dir = "../../tmp/"
 
 [build]
   args_bin = []

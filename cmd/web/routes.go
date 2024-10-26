@@ -36,15 +36,8 @@ func getAnimeList(ctx *gin.Context) {
 			anime.Img = eachAnime.ChildAttr("img", "src")
 			animeList = append(animeList, anime)
 		})
-		// fmt.Printf("anime list %v", animeList)
 	})
 
 	collector.Visit(url)
 	ctx.IndentedJSON(http.StatusOK, animeList)
-}
-
-func main() {
-	router := gin.Default()
-	router.POST("/getanime", getAnimeList)
-	router.Run("localhost:8080")
 }
