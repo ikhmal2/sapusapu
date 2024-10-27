@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
@@ -31,17 +33,18 @@ func getAnimeList(ctx *gin.Context) {
 
 	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled:", err) }))
 
+	context := context.Background()
 	var animeList []animeItem
 	collector.OnHTML(".items", func(e *colly.HTMLElement) {
 		anime := animeItem{}
 		e.ForEach("li", func(i int, eachAnime *colly.HTMLElement) {
 			anime.Name = eachAnime.ChildText("p.name")
-			anime.Released = eachAnime.ChildText("p.released")
+			anime.Released = strings.Split(eachAnime.ChildText("p.released"), " ")[1]
 			anime.Link = eachAnime.ChildAttr("a", "href")
 			anime.Img = eachAnime.ChildAttr("img", "src")
 			animeList = append(animeList, anime)
 
-			insertedAnime, err := db.DBconnect().InsertAnimeIntoList(ctx, sqlQueries.InsertAnimeIntoListParams{
+			insertedAnime, err := db.DBconnect().InsertAnimeIntoList(context, sqlQueries.InsertAnimeIntoListParams{
 				AnimeName: anime.Name,
 				Released:  anime.Released,
 				Img:       sql.NullString{String: anime.Img, Valid: true},
@@ -49,9 +52,9 @@ func getAnimeList(ctx *gin.Context) {
 			})
 
 			if err != nil {
-				log.Print("Error executing query: ", err)
+				log.Fatal("Error executing query: ", err)
 			}
-			log.Print("Anime inserted into DB: ", insertedAnime)
+			log.Println("Anime inserted into DB: ", insertedAnime)
 		})
 
 	})

@@ -1,6 +1,9 @@
 -- name: GetAllAnimeList :many
 SELECT * FROM anime_list;
 
+-- name: FindAnime :one
+SELECT * FROM anime_list WHERE anime_name LIKE ?;
+
 -- name: FindAnimeByName :one
 SELECT * FROM anime_list WHERE CONTAINS (anime_name, ?);
 

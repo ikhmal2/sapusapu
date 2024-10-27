@@ -8,7 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const database string = "sapusapu.db"
+const database string = "./sapusapu.db"
 
 func DBconnect() *sqlQueries.Queries {
 	db, err := sql.Open("sqlite3", database)
