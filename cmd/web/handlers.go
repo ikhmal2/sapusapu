@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
 	"github.com/ikhmal2/sapusapu/internal/db"
-	"github.com/ikhmal2/sapusapu/internal/middlewares"
 	"github.com/ikhmal2/sapusapu/internal/sqlQueries"
+	"github.com/ikhmal2/sapusapu/internal/utils"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -44,7 +44,7 @@ func getAnimeList(ctx *gin.Context) {
 			anime.Link = eachAnime.ChildAttr("a", "href")
 			anime.Img = eachAnime.ChildAttr("img", "src")
 
-			animeExits, animeData := middlewares.CheckExistingList(anime.Name)
+			animeExits, animeData := utils.CheckExistingList(anime.Name)
 
 			if !animeExits {
 				_, err := db.DBconnect().InsertAnimeIntoList(context, sqlQueries.InsertAnimeIntoListParams{
