@@ -73,6 +73,35 @@ func getAnimeList(ctx *gin.Context) {
 	if len(animeList) != 0 {
 		ctx.IndentedJSON(http.StatusOK, animeList)
 	} else {
-		ctx.IndentedJSON(http.StatusNotFound, "Can't find the anime you're looking")
+		ctx.IndentedJSON(http.StatusNotFound, "Can't find the anime you're looking for")
 	}
+}
+
+type animeEp struct {
+	AnimeLink string `json:"link"`
+	Episode   string `json:"episode"`
+}
+
+func goToAnime(ctx *gin.Context) {
+	anime := ctx.Param("anime")
+	animeExist, animeReturned := utils.CheckExistingList(anime)
+
+	if !animeExist {
+		ctx.IndentedJSON(http.StatusNotFound, "Can't find the anime you're looking for")
+	}
+	var animeEps []animeEp
+	animePage := fmt.Sprintln(webUrl + animeReturned.Link)
+	collector := colly.NewCollector()
+	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled:", err) }))
+	collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
+		animeEpisode := animeEp{}
+		e.ForEach("li", func(i int, eachEps *colly.HTMLElement) {
+			animeEpisode.AnimeLink = eachEps.ChildAttr("a", "href")
+			animeEpisode.Episode = eachEps.ChildText("div.name")
+		})
+		animeEps = append(animeEps, animeEpisode)
+	})
+
+	collector.Visit(animePage)
+	ctx.IndentedJSON(http.StatusOK, animeEps)
 }
