@@ -11,7 +11,7 @@ import (
 )
 
 const findAnime = `-- name: FindAnime :one
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE anime_name LIKE ?
+SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE anime_name = ?
 `
 
 func (q *Queries) FindAnime(ctx context.Context, animeName string) (AnimeList, error) {
