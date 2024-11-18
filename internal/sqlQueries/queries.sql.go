@@ -11,29 +11,11 @@ import (
 )
 
 const findAnime = `-- name: FindAnime :one
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE anime_name = ?
+SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE anime_name LIKE ?
 `
 
 func (q *Queries) FindAnime(ctx context.Context, animeName string) (AnimeList, error) {
 	row := q.db.QueryRowContext(ctx, findAnime, animeName)
-	var i AnimeList
-	err := row.Scan(
-		&i.AnimeID,
-		&i.AnimeName,
-		&i.Released,
-		&i.Img,
-		&i.Link,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const findAnimeByName = `-- name: FindAnimeByName :one
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE CONTAINS (anime_name, ?)
-`
-
-func (q *Queries) FindAnimeByName(ctx context.Context, contains interface{}) (AnimeList, error) {
-	row := q.db.QueryRowContext(ctx, findAnimeByName, contains)
 	var i AnimeList
 	err := row.Scan(
 		&i.AnimeID,
@@ -78,6 +60,24 @@ func (q *Queries) GetAllAnimeList(ctx context.Context) ([]AnimeList, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getAnimeEpsByLink = `-- name: GetAnimeEpsByLink :one
+SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE link = ?
+`
+
+func (q *Queries) GetAnimeEpsByLink(ctx context.Context, link string) (AnimeList, error) {
+	row := q.db.QueryRowContext(ctx, getAnimeEpsByLink, link)
+	var i AnimeList
+	err := row.Scan(
+		&i.AnimeID,
+		&i.AnimeName,
+		&i.Released,
+		&i.Img,
+		&i.Link,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const insertAnimeIntoList = `-- name: InsertAnimeIntoList :one

@@ -13,7 +13,7 @@ const database string = "./sapusapu.db"
 func DBconnect() *sqlQueries.Queries {
 	db, err := sql.Open("sqlite3", database)
 	if err != nil {
-		log.Fatal("error connecting to DB: ", err)
+		log.Println("error connecting to DB: ", err)
 	}
 
 	queries := sqlQueries.New(db)

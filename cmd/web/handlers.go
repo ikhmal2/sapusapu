@@ -17,7 +17,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var webUrl string = "https://gogoanime3.co/"
+var webUrl string = "https://gogoanime3.cc"
 
 type animeItem struct {
 	Name     string `json:"name"`
@@ -29,10 +29,12 @@ type animeItem struct {
 func getAnimeList(ctx *gin.Context) {
 	keyword := ctx.Query("search")
 	search := url.QueryEscape(keyword)
-	url := fmt.Sprintf("%ssearch.html?keyword=%s", webUrl, search)
+	url := fmt.Sprintf("%s/search.html?keyword=%s", webUrl, search)
 	collector := colly.NewCollector()
 
 	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled:", err) }))
+	collector.OnRequest((func(r *colly.Request) { fmt.Printf("Requesting to: %v\n", url) }))
+	collector.OnResponse((func(r *colly.Response) { fmt.Printf("Got resp from %v", url) }))
 
 	context := context.Background()
 	var animeList []animeItem
@@ -54,7 +56,7 @@ func getAnimeList(ctx *gin.Context) {
 					Link:      anime.Link,
 				})
 				if err != nil {
-					log.Fatal("Error executing query: ", err)
+					log.Println("Error executing query: ", err)
 				}
 				animeList = append(animeList, anime)
 			} else {
@@ -69,7 +71,9 @@ func getAnimeList(ctx *gin.Context) {
 
 	})
 
-	collector.Visit(url)
+	if err := collector.Visit(url); err != nil {
+		log.Println("error searching anime: ", err)
+	}
 	if len(animeList) != 0 {
 		ctx.IndentedJSON(http.StatusOK, animeList)
 	} else {
@@ -83,25 +87,39 @@ type animeEp struct {
 }
 
 func goToAnime(ctx *gin.Context) {
-	anime := ctx.Param("anime")
-	animeExist, animeReturned := utils.CheckExistingList(anime)
+	anime := ctx.Query("anime")
+	animeReturned, err := utils.FindAnimeByLink(anime)
 
-	if !animeExist {
-		ctx.IndentedJSON(http.StatusNotFound, "Can't find the anime you're looking for")
+	if err != nil {
+		ctx.IndentedJSON(http.StatusInternalServerError, "Can't find the anime you're looking for")
 	}
 	var animeEps []animeEp
-	animePage := fmt.Sprintln(webUrl + animeReturned.Link)
+	animePage := fmt.Sprintf("%s%s", webUrl, animeReturned.Link)
+
 	collector := colly.NewCollector()
-	collector.OnError((func(r *colly.Response, err error) { fmt.Println("boy u fumbled:", err) }))
-	collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
-		animeEpisode := animeEp{}
-		e.ForEach("li", func(i int, eachEps *colly.HTMLElement) {
-			animeEpisode.AnimeLink = eachEps.ChildAttr("a", "href")
-			animeEpisode.Episode = eachEps.ChildText("div.name")
-		})
-		animeEps = append(animeEps, animeEpisode)
+	collector.OnError((func(r *colly.Response, err error) { fmt.Println("\nboy u fumbled:", err) }))
+	collector.OnRequest((func(r *colly.Request) { fmt.Printf("Requesting to: %v\n", animePage) }))
+
+	// collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
+	// 	fmt.Println("dah masuk")
+	// 	animeEpisode := animeEp{}
+	// 	e.ForEach("li", func(i int, eachEps *colly.HTMLElement) {
+	// 		animeEpisode.AnimeLink = eachEps.ChildAttr("a", "href")
+	// 		animeEpisode.Episode = eachEps.ChildText("div.name")
+	// 		animeEps = append(animeEps, animeEpisode)
+	// 	})
+	// })
+	collector.OnHTML("#load_ep", func(e *colly.HTMLElement) {
+		fmt.Println("dah masuk")
+		e.
 	})
 
-	collector.Visit(animePage)
-	ctx.IndentedJSON(http.StatusOK, animeEps)
+	if err := collector.Visit(animePage); err != nil {
+		fmt.Println("Err while trying to visit: ", err)
+	}
+	if len(animeEps) > 0 {
+		ctx.IndentedJSON(http.StatusOK, animeEps)
+	} else {
+		ctx.IndentedJSON(http.StatusNotFound, "Can't find episodes for the anime")
+	}
 }
