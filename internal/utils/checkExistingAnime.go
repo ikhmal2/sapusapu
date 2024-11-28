@@ -15,6 +15,7 @@ func CheckExistingList(aniName string) (bool, *sqlQueries.AnimeList) {
 		log.Println("Error:", err)
 		return false, nil
 	} else {
+		log.Println("Anime found:", anime)
 		return true, &anime
 	}
 }

@@ -7,6 +7,6 @@ import (
 func main() {
 	router := gin.Default()
 	router.POST("/anime/v1/get-anime", getAnimeList)
-	router.POST("/anime/v1/get-episodes", goToAnime)
+	router.POST("/anime/v1/get-episodes", getAnimeEps)
 	router.Run("localhost:8080")
 }

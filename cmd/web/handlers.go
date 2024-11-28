@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/chromedp"
 	"github.com/gin-gonic/gin"
 	"github.com/gocolly/colly"
 	"github.com/ikhmal2/sapusapu/internal/db"
@@ -86,40 +89,78 @@ type animeEp struct {
 	Episode   string `json:"episode"`
 }
 
-func goToAnime(ctx *gin.Context) {
-	anime := ctx.Query("anime")
-	animeReturned, err := utils.FindAnimeByLink(anime)
+// func goToAnime(ctx *gin.Context) {
+// 	anime := ctx.Query("anime")
+// 	animeReturned, err := utils.FindAnimeByLink(anime)
 
+// 	if err != nil {
+// 		ctx.IndentedJSON(http.StatusInternalServerError, "Can't find the anime you're looking for")
+// 	}
+// 	var animeEps []animeEp
+// 	animePage := fmt.Sprintf("%s%s", webUrl, animeReturned.Link)
+
+// 	collector := colly.NewCollector()
+// 	collector.OnError((func(r *colly.Response, err error) { fmt.Println("\nboy u fumbled:", err) }))
+// 	collector.OnRequest((func(r *colly.Request) { fmt.Printf("Requesting to: %v\n", animePage) }))
+
+// 	// collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
+// 	// 	fmt.Println("dah masuk")
+// 	// 	animeEpisode := animeEp{}
+// 	// 	e.ForEach("li", func(i int, eachEps *colly.HTMLElement) {
+// 	// 		animeEpisode.AnimeLink = eachEps.ChildAttr("a", "href")
+// 	// 		animeEpisode.Episode = eachEps.ChildText("div.name")
+// 	// 		animeEps = append(animeEps, animeEpisode)
+// 	// 	})
+// 	// })
+// 	collector.OnHTML("#load_ep", func(e *colly.HTMLElement) {
+// 		fmt.Println("dah masuk")
+
+// 	})
+
+// 	if err := collector.Visit(animePage); err != nil {
+// 		fmt.Println("Err while trying to visit: ", err)
+// 	}
+// 	if len(animeEps) > 0 {
+// 		ctx.IndentedJSON(http.StatusOK, animeEps)
+// 	} else {
+// 		ctx.IndentedJSON(http.StatusNotFound, "Can't find episodes for the anime")
+// 	}
+// }
+
+func getAnimeEps(contx *gin.Context) {
+	anime := contx.Query("anime")
+	animeReturned, err := utils.FindAnimeByLink(anime)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, "Can't find the anime you're looking for")
+		contx.IndentedJSON(http.StatusInternalServerError, "Can't find the anime you're looking for")
 	}
-	var animeEps []animeEp
-	animePage := fmt.Sprintf("%s%s", webUrl, animeReturned.Link)
+	url := fmt.Sprintf("%s%s", webUrl, animeReturned.Link)
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var html string
+	err = chromedp.Run(ctx,
+		chromedp.Navigate(url),
+		chromedp.Sleep(2000*time.Millisecond),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			rootNode, err := dom.GetDocument().Do(ctx)
+			if err != nil {
+				return err
+			}
+			html, err = dom.GetOuterHTML().WithNodeID(rootNode.NodeID).Do(ctx)
+			return err
+		}),
+	)
+	if err != nil {
+		log.Fatal("Error while performing the automation logic:", err)
+	}
 
 	collector := colly.NewCollector()
 	collector.OnError((func(r *colly.Response, err error) { fmt.Println("\nboy u fumbled:", err) }))
-	collector.OnRequest((func(r *colly.Request) { fmt.Printf("Requesting to: %v\n", animePage) }))
+	collector.OnRequest((func(r *colly.Request) { fmt.Println("Requesting to retrived HTML") }))
 
-	// collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
-	// 	fmt.Println("dah masuk")
-	// 	animeEpisode := animeEp{}
-	// 	e.ForEach("li", func(i int, eachEps *colly.HTMLElement) {
-	// 		animeEpisode.AnimeLink = eachEps.ChildAttr("a", "href")
-	// 		animeEpisode.Episode = eachEps.ChildText("div.name")
-	// 		animeEps = append(animeEps, animeEpisode)
-	// 	})
-	// })
-	collector.OnHTML("#load_ep", func(e *colly.HTMLElement) {
+	collector.OnHTML("#episode_related", func(e *colly.HTMLElement) {
 		fmt.Println("dah masuk")
-		e.
 	})
 
-	if err := collector.Visit(animePage); err != nil {
-		fmt.Println("Err while trying to visit: ", err)
-	}
-	if len(animeEps) > 0 {
-		ctx.IndentedJSON(http.StatusOK, animeEps)
-	} else {
-		ctx.IndentedJSON(http.StatusNotFound, "Can't find episodes for the anime")
-	}
+	collector.Visit(html)
 }
