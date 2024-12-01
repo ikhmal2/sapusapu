@@ -11,7 +11,12 @@ import (
 )
 
 const findAnime = `-- name: FindAnime :one
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE anime_name LIKE ?
+SELECT
+	anime_id, anime_name, released, img, link, created_at
+FROM
+	anime_list
+WHERE
+	anime_name LIKE ?
 `
 
 func (q *Queries) FindAnime(ctx context.Context, animeName string) (AnimeList, error) {
@@ -29,7 +34,10 @@ func (q *Queries) FindAnime(ctx context.Context, animeName string) (AnimeList, e
 }
 
 const getAllAnimeList = `-- name: GetAllAnimeList :many
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list
+SELECT
+	anime_id, anime_name, released, img, link, created_at
+FROM
+	anime_list
 `
 
 func (q *Queries) GetAllAnimeList(ctx context.Context) ([]AnimeList, error) {
@@ -62,8 +70,40 @@ func (q *Queries) GetAllAnimeList(ctx context.Context) ([]AnimeList, error) {
 	return items, nil
 }
 
+const getAnimeEpisode = `-- name: GetAnimeEpisode :one
+SELECT
+	anime_eps_list_id, animeid, episode, created_at
+FROM
+	anime_eps_list
+WHERE
+	animeID = ?
+	AND episode = ?
+`
+
+type GetAnimeEpisodeParams struct {
+	Animeid sql.NullInt64
+	Episode string
+}
+
+func (q *Queries) GetAnimeEpisode(ctx context.Context, arg GetAnimeEpisodeParams) (AnimeEpsList, error) {
+	row := q.db.QueryRowContext(ctx, getAnimeEpisode, arg.Animeid, arg.Episode)
+	var i AnimeEpsList
+	err := row.Scan(
+		&i.AnimeEpsListID,
+		&i.Animeid,
+		&i.Episode,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getAnimeEpsByLink = `-- name: GetAnimeEpsByLink :one
-SELECT anime_id, anime_name, released, img, link, created_at FROM anime_list WHERE link = ?
+SELECT
+	anime_id, anime_name, released, img, link, created_at
+FROM
+	anime_list
+WHERE
+	link = ?
 `
 
 func (q *Queries) GetAnimeEpsByLink(ctx context.Context, link string) (AnimeList, error) {
@@ -80,8 +120,35 @@ func (q *Queries) GetAnimeEpsByLink(ctx context.Context, link string) (AnimeList
 	return i, err
 }
 
+const insertAnimeEp = `-- name: InsertAnimeEp :one
+INSERT INTO
+	anime_eps_list (animeID, episode)
+VALUES
+	(?, ?) RETURNING anime_eps_list_id, animeid, episode, created_at
+`
+
+type InsertAnimeEpParams struct {
+	Animeid sql.NullInt64
+	Episode string
+}
+
+func (q *Queries) InsertAnimeEp(ctx context.Context, arg InsertAnimeEpParams) (AnimeEpsList, error) {
+	row := q.db.QueryRowContext(ctx, insertAnimeEp, arg.Animeid, arg.Episode)
+	var i AnimeEpsList
+	err := row.Scan(
+		&i.AnimeEpsListID,
+		&i.Animeid,
+		&i.Episode,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertAnimeIntoList = `-- name: InsertAnimeIntoList :one
-INSERT INTO anime_list (anime_name, released, img, link) VALUES (?, ?, ?, ?) RETURNING anime_id, anime_name, released, img, link, created_at
+INSERT INTO
+	anime_list (anime_name, released, img, link)
+VALUES
+	(?, ?, ?, ?) RETURNING anime_id, anime_name, released, img, link, created_at
 `
 
 type InsertAnimeIntoListParams struct {
