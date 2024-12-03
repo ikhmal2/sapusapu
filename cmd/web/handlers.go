@@ -105,6 +105,7 @@ func getAnimeEps(contx *gin.Context) {
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(url),
 		chromedp.Sleep(2000*time.Millisecond),
+		chromedp.Click("a[ep_start]"),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			rootNode, err := dom.GetDocument().Do(ctx)
 			if err != nil {
@@ -128,11 +129,12 @@ func getAnimeEps(contx *gin.Context) {
 	episodeRelated := doc.Find("#episode_related > li > a")
 	var episodes []animeEp
 	episodeItem := animeEp{}
-	var episodeCheck *sqlQueries.GetAnimeEpisodeParams
+	var episodeCheck = &sqlQueries.GetAnimeEpisodeParams{
+		Animeid: sql.NullInt64{Int64: animeID, Valid: true},
+	}
 	episodeRelated.Each(func(_ int, s *goquery.Selection) {
 		episodeItem.AnimeLink, _ = s.Attr("href")
 		episodeItem.Episode = s.Children().Text()
-		episodeCheck.Animeid = sql.NullInt64{Int64: animeID, Valid: true}
 		episodeCheck.Episode = episodeItem.AnimeLink
 
 		if !utils.CheckExistingEp(episodeCheck) {
