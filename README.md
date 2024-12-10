@@ -1,5 +1,7 @@
 # Project SapuSapu
 
+**_THIS PROJECT IS NOW FUCKED SINCE THE WEBSITE IM SCRAPING WILL BE GONE FOREVER_**
+
 A full stack project consisting of Golang as backend and probably React or HTMX _(still haven't decided yet brrr)_ . It will scrape data from either existing public website or scrap data from open APIs and take the URLs, store them in SQLite database. I will then either use those data and pass them through REST API as JSON for FE to consume or I will use those to render on the server and send the HTML to the FE.
 
 **_Disclosure: This project will not be open for public use once completed since I'm only building this as a way for me to build something with Go._**
